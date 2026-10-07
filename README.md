@@ -62,4 +62,3 @@ Os testes usam substitutos locais para autenticação e banco: não enviam e-mai
 - O módulo de IA ainda aponta para o gateway antigo, aguardando a escolha de um provedor direto. Sem credenciais, os recursos de IA exibem erro de configuração; não produzem resultados fictícios.
 - Google Places, busca e Instagram ainda não estão conectados. O cadastro manual está disponível.
 - O banco existente foi preservado. Para outro projeto Supabase, aplique a migração de `drizzle/migrations/0000_lead_hunter_ai_core.sql` antes de usar a aplicação.
-

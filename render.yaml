@@ -1,0 +1,27 @@
+# Deploy as a Render Blueprint from the project's Git repository.
+# Public Supabase values are entered in Render, never committed here.
+services:
+  - type: web
+    name: leads
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /auth
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: HOST
+        value: "0.0.0.0"
+      - key: NODE_ENV
+        value: production
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: VITE_SUPABASE_PROJECT_ID
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false

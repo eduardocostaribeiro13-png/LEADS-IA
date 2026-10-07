@@ -1,0 +1,125 @@
+import type { TablesInsert } from "@/integrations/supabase/types";
+import { calculateLeadScore } from "@/lib/score";
+
+type LeadInsert = TablesInsert<"leads">;
+
+/**
+ * Empresas fictícias para demonstração. Sempre gravadas com `is_demo: true`,
+ * `source: "demo"` e o prefixo "[DEMO]" no nome — nunca se misturam com dados reais.
+ */
+const DEMO_SEEDS: Array<Partial<LeadInsert>> = [
+  {
+    company_name: "[DEMO] Clínica Vitalis",
+    category: "Clínicas",
+    description: "Clínica de saúde integrativa com atendimento particular.",
+    city: "Florianópolis",
+    state: "SC",
+    country: "Brasil",
+    phone: "(48) 0000-0000",
+    whatsapp: "(48) 90000-0000",
+    instagram: "@demo.clinicavitalis",
+    google_maps_url: "https://maps.google.com/?q=demo-clinica-vitalis",
+    rating: 4.8,
+    review_count: 214,
+    followers: 8400,
+    tags: ["DEMO", "PREMIUM", "SEM SITE"],
+  },
+  {
+    company_name: "[DEMO] Odonto Prime",
+    category: "Odontologia",
+    description: "Consultório odontológico com foco em estética dental.",
+    city: "Balneário Camboriú",
+    state: "SC",
+    country: "Brasil",
+    phone: "(47) 0000-0000",
+    website: "http://demo-odontoprime.negocio.site",
+    instagram: "@demo.odontoprime",
+    google_maps_url: "https://maps.google.com/?q=demo-odonto-prime",
+    rating: 4.6,
+    review_count: 132,
+    followers: 3100,
+    tags: ["DEMO", "SITE RUIM", "HIGH TICKET"],
+  },
+  {
+    company_name: "[DEMO] Trattoria Nonna",
+    category: "Restaurantes",
+    description: "Restaurante italiano de bairro com casa cheia nos fins de semana.",
+    city: "Curitiba",
+    state: "PR",
+    country: "Brasil",
+    phone: "(41) 0000-0000",
+    whatsapp: "(41) 90000-0000",
+    instagram: "@demo.trattorianonna",
+    google_maps_url: "https://maps.google.com/?q=demo-trattoria-nonna",
+    rating: 4.7,
+    review_count: 890,
+    followers: 15200,
+    tags: ["DEMO", "GOOGLE FORTE", "SEM SITE"],
+  },
+  {
+    company_name: "[DEMO] Horizonte Imóveis",
+    category: "Imobiliárias",
+    description: "Imobiliária de alto padrão focada em imóveis de frente para o mar.",
+    city: "Itapema",
+    state: "SC",
+    country: "Brasil",
+    phone: "(47) 0000-0000",
+    email: "contato@demo-horizonteimoveis.com",
+    website: "http://demo-horizonteimoveis.com",
+    instagram: "@demo.horizonteimoveis",
+    rating: 4.4,
+    review_count: 61,
+    followers: 5200,
+    tags: ["DEMO", "HIGH TICKET", "PREMIUM"],
+  },
+  {
+    company_name: "[DEMO] Pousada Maré Alta",
+    category: "Pousadas",
+    description: "Pousada boutique com 14 suítes e alta ocupação no verão.",
+    city: "Bombinhas",
+    state: "SC",
+    country: "Brasil",
+    whatsapp: "(47) 90000-0000",
+    instagram: "@demo.pousadamarealta",
+    google_maps_url: "https://maps.google.com/?q=demo-pousada-mare-alta",
+    rating: 4.9,
+    review_count: 340,
+    followers: 11800,
+    tags: ["DEMO", "PREMIUM", "INSTAGRAM FORTE"],
+  },
+  {
+    company_name: "[DEMO] Academia Corpo Livre",
+    category: "Academias",
+    description: "Academia de bairro com planos mensais e aulas coletivas.",
+    city: "Joinville",
+    state: "SC",
+    country: "Brasil",
+    phone: "(47) 0000-0000",
+    instagram: "@demo.corpolivre",
+    google_maps_url: "https://maps.google.com/?q=demo-academia-corpo-livre",
+    rating: 4.2,
+    review_count: 96,
+    followers: 2400,
+    tags: ["DEMO", "SEM SITE", "LOCAL"],
+  },
+];
+
+export function buildDemoLeads(userId: string): LeadInsert[] {
+  return DEMO_SEEDS.map((seed) => {
+    const breakdown = calculateLeadScore(seed);
+    return {
+      ...seed,
+      company_name: seed.company_name!,
+      user_id: userId,
+      is_demo: true,
+      source: "demo",
+      status: "novo",
+      lead_score: breakdown.total,
+      investment_score: breakdown.investment,
+      website_need_score: breakdown.websiteNeed,
+      digital_presence_score: breakdown.digitalPresence,
+      sales_potential_score: breakdown.salesPotential,
+      problem_score: breakdown.problems,
+    } as LeadInsert;
+  });
+}
