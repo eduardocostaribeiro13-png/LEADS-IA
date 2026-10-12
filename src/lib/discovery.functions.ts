@@ -1,12 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { searchPlaces } from "@/lib/places.server";
+import { searchOpenStreetMap } from "@/lib/osm.server";
 
 export const getDiscoveryConfiguration = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async () => ({
-    googlePlacesConfigured: Boolean(process.env["GOOGLE_PLACES_API_KEY"]?.trim()),
+    freeSource: "openstreetmap" as const,
   }));
 
 export const discoverPlaces = createServerFn({ method: "POST" })
@@ -28,16 +28,11 @@ export const discoverPlaces = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
-    const leads = await searchPlaces({
-      query: [data.segment, data.neighborhood, data.city, data.state, data.country]
-        .filter(Boolean)
-        .join(", "),
-      quantity: data.quantity,
-    });
+    const leads = await searchOpenStreetMap(data);
     return {
       connected: true,
-      source: "google_places" as const,
-      message: `${leads.length} empresas encontradas no Google Maps. Confira os resultados antes de cadastrar uma empresa.`,
+      source: "openstreetmap" as const,
+      message: `${leads.length} empresas encontradas no OpenStreetMap, em até ${data.neighborhood ? 3 : 10} km do centro da localização informada. A cobertura varia e pode incluir municípios vizinhos.`,
       leads,
     };
   });

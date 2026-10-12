@@ -15,30 +15,32 @@ export function DiscoverySources() {
     <PanelCard title="Fontes de dados" subtitle="Disponibilidade das integrações de busca.">
       <ul className="space-y-3 text-sm">
         <li>
-          Google Maps / Places:{" "}
+          OpenStreetMap:{" "}
           {status.isPending
             ? "Verificando…"
             : status.isError
               ? "Não foi possível verificar"
-              : status.data?.googlePlacesConfigured
-                ? "Configurado — pronto para consultar"
+              : status.data?.freeSource
+                ? "Disponivel sem chave ou pagamento"
                 : "Aguardando configuração"}
         </li>
+        <li>Google Maps / Places: desativado para evitar custos</li>
         <li>Google Search: integração ainda não implementada</li>
         <li>Instagram: integração ainda não implementada</li>
         <li>Cadastro manual: disponível</li>
       </ul>
       <p className="mt-3 text-xs text-muted-foreground">
-        O administrador precisa habilitar Places API (New) no Google Cloud e configurar a chave no
-        servidor. Ter uma conta Google não conecta essa fonte automaticamente.
+        A busca utiliza dados publicos colaborativos. A cobertura varia por cidade; avaliacoes do
+        Google e seguidores nao fazem parte desta fonte. O servico gratuito pode ficar
+        temporariamente ocupado.
       </p>
       <a
         className="mt-3 block text-sm underline"
-        href="https://console.cloud.google.com/google/maps-apis/overview"
+        href="https://www.openstreetmap.org/copyright"
         target="_blank"
         rel="noreferrer"
       >
-        Abrir configuração do Google Maps
+        Dados: contribuidores do OpenStreetMap (ODbL)
       </a>
       <button
         type="button"

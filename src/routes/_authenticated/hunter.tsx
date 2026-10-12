@@ -318,11 +318,19 @@ function Hunter() {
             )}
           </PanelCard>
           {results.length > 0 && (
-            <PanelCard title="Empresas encontradas" subtitle="Google Maps">
+            <PanelCard title="Empresas encontradas" subtitle="OpenStreetMap">
               <p className="mb-3 text-xs text-muted-foreground">
-                Dados fornecidos por Google Maps. A ausência de informações não confirma problemas
-                na empresa.
+                Dados: contribuidores do OpenStreetMap (ODbL). A ausência de informações não
+                confirma problemas na empresa.
               </p>
+              <a
+                className="text-xs underline"
+                href="https://www.openstreetmap.org/copyright"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Licenca e atribuicao dos dados
+              </a>
               <ul className="space-y-3">
                 {results.map((place) => (
                   <li key={place.id} className="rounded-lg border border-edge p-3">
@@ -334,7 +342,7 @@ function Hunter() {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Conferir no Google Maps
+                      Conferir no OpenStreetMap
                     </a>
                   </li>
                 ))}

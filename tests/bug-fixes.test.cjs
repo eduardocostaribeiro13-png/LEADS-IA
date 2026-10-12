@@ -32,6 +32,91 @@ const { safeAuthPath } = load("src/lib/auth-redirect.ts");
 const score = load("src/lib/score.ts");
 const { searchPlaces } = load("src/lib/places.server.ts");
 
+test("OpenStreetMap rejects unsupported categories before making requests", async () => {
+  const { searchOpenStreetMap } = load("src/lib/osm.server.ts");
+  await assert.rejects(
+    searchOpenStreetMap(
+      {
+        city: "Curitiba",
+        state: "PR",
+        country: "Brasil",
+        neighborhood: "",
+        segment: "unknown",
+        quantity: 10,
+      },
+      () => {
+        throw new Error("unexpected network call");
+      },
+    ),
+    /segmento/,
+  );
+});
+
+test("OpenStreetMap returns attributed real records, deduplicates and caches repeated searches", async () => {
+  const { searchOpenStreetMap } = load("src/lib/osm.server.ts");
+  let calls = 0;
+  const request = async (url, options) => {
+    calls++;
+    assert.ok(options.headers["User-Agent"].includes("leads-ia.onrender.com"));
+    if (String(url).includes("nominatim"))
+      return new Response(JSON.stringify([{ lat: "-25.4", lon: "-49.2" }]));
+    assert.match(new URLSearchParams(options.body).get("data"), /around:10000,-25.4,-49.2/);
+    return new Response(
+      JSON.stringify({
+        elements: [
+          { type: "node", id: 1, tags: { name: "Empresa real" } },
+          { type: "node", id: 1, tags: { name: "Empresa real" } },
+          { type: "node", id: 2 },
+        ],
+      }),
+    );
+  };
+  const input = {
+    city: "Curitiba",
+    state: "PR",
+    country: "Brasil",
+    neighborhood: "",
+    segment: "Restaurantes",
+    quantity: 10,
+  };
+  const first = await searchOpenStreetMap(input, request);
+  assert.deepEqual(first, [
+    {
+      id: "node/1",
+      name: "Empresa real",
+      address: "Endereço não informado",
+      mapsUrl: "https://www.openstreetmap.org/node/1",
+    },
+  ]);
+  assert.deepEqual(await searchOpenStreetMap(input, request), first);
+  assert.equal(calls, 2);
+});
+
+test("OpenStreetMap does not report incomplete upstream results as success", async () => {
+  const { searchOpenStreetMap } = load("src/lib/osm.server.ts");
+  await assert.rejects(
+    searchOpenStreetMap(
+      {
+        city: "Curitiba",
+        state: "PR",
+        country: "Brasil",
+        neighborhood: "",
+        segment: "Restaurantes",
+        quantity: 10,
+      },
+      async (url) =>
+        new Response(
+          JSON.stringify(
+            String(url).includes("nominatim")
+              ? [{ lat: "-25", lon: "-49" }]
+              : { remark: "runtime error", elements: [] },
+          ),
+        ),
+    ),
+    /não concluiu/,
+  );
+});
+
 test("Places without a key does not issue a request", async () => {
   await assert.rejects(
     searchPlaces({ query: "Clínicas", quantity: 10 }, "", () => {

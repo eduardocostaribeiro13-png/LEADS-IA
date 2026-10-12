@@ -63,7 +63,24 @@ Os testes usam substitutos locais para autenticação e banco: não enviam e-mai
 - Google Places, busca e Instagram ainda não estão conectados. O cadastro manual está disponível.
 - O banco existente foi preservado. Para outro projeto Supabase, aplique a migração de `drizzle/migrations/0000_lead_hunter_ai_core.sql` antes de usar a aplicação.
 
-## Fonte Google Maps / Places
+## Fonte gratuita ativa: OpenStreetMap
+
+A busca usa Nominatim para localizar a cidade e Overpass para consultar empresas
+em até 10 km do centro encontrado (3 km quando um bairro é informado).
+Não precisa de chave, cartão ou faturamento. A cobertura é colaborativa, pode
+incluir municípios vizinhos e não contém avaliações do Google ou seguidores.
+Os resultados têm atribuição e links para OpenStreetMap, sem gravação automática.
+
+O servidor mantém cache limitado de localidades por 24 horas e resultados por
+15 minutos, processa uma busca externa por vez e limita a frequência. A configuração
+atual pressupõe uma instância do servidor; antes de escalar, use um limitador e
+cache compartilhados ou outro provedor. Endpoints podem ser trocados pelo administrador
+com `OSM_GEOCODING_URL` e `OSM_OVERPASS_URL`, sem alterar o código.
+
+## Google Maps / Places (inativo)
+
+O fluxo de busca atual não chama o Google, mesmo que exista uma chave no ambiente.
+O adaptador está preservado para uma eventual ativação futura autorizada.
 
 A busca usa Places API (New), no servidor e apenas para usuários autenticados.
 Habilite essa API em um projeto Google Cloud com faturamento e configure

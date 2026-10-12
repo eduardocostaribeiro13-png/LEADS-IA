@@ -1,7 +1,8 @@
 import { discoverPlaces } from "@/lib/discovery.functions";
 import type { PlaceResult } from "@/lib/places.server";
 
-export type DiscoverySourceId = "google_places" | "google_search" | "instagram" | "manual";
+export type DiscoverySourceId =
+  "openstreetmap" | "google_places" | "google_search" | "instagram" | "manual";
 
 export interface HuntFilters {
   country: string;
@@ -39,22 +40,15 @@ export const COMMERCIAL_SIGNALS = [
 export const SEGMENTS = [
   "Clínicas",
   "Odontologia",
-  "Estética",
-  "Dermatologia",
-  "Psicologia",
   "Advocacia",
   "Imobiliárias",
   "Restaurantes",
   "Hotéis",
   "Pousadas",
-  "Turismo",
   "Academias",
   "Salões",
   "Barbearias",
   "Lojas",
-  "Empresas B2B",
-  "Profissionais liberais",
-  "Serviços premium",
 ];
 
 export const QUANTITIES = [10, 20];
