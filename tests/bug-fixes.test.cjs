@@ -275,7 +275,7 @@ test("session switches clear cached data, token refresh preserves it, logout red
   assert.equal(clears, 3);
 });
 
-function authHarness(url, session = { user: { id: "user" } }) {
+function authHarness(url, session = { user: { id: "user" } }, googleEnabled = true) {
   const h = hooks();
   const navigations = [];
   const updates = [];
@@ -308,7 +308,10 @@ function authHarness(url, session = { user: { id: "user" } }) {
         success: (message) => notices.push(message),
       },
     },
-    "@/integrations/supabase/client": { supabase: { auth } },
+    "@/integrations/supabase/client": {
+      supabase: { auth },
+      isGoogleAuthEnabled: async () => googleEnabled,
+    },
     "@/lib/auth-redirect": { safeAuthPath },
   };
   for (const [file, names] of Object.entries({
@@ -408,6 +411,9 @@ for (const failure of ["expired", "write-error"]) {
 
 test("Google login calls Supabase directly with an internal redirect", async () => {
   const a = authHarness("https://app.test/auth?next=%2F%5Cevil.test", null);
+  a.render();
+  a.h.mount();
+  await tick();
   const calls = [];
   a.auth.signInWithOAuth = async (input) => {
     calls.push(input);
@@ -422,6 +428,9 @@ test("Google login calls Supabase directly with an internal redirect", async () 
 
 test("Google login errors re-enable the button and display feedback", async () => {
   const a = authHarness("https://app.test/auth", null);
+  a.render();
+  a.h.mount();
+  await tick();
   a.auth.signInWithOAuth = async () => {
     throw new Error("unavailable");
   };
@@ -431,4 +440,19 @@ test("Google login errors re-enable the button and display feedback", async () =
     false,
   );
   assert.match(a.notices[0], /Google/);
+});
+
+test("disabled Google provider is not offered while email login stays available", async () => {
+  const a = authHarness("https://app.test/auth", null, false);
+  assert.equal(
+    find(a.render(), (node) => node.props?.children === "Continuar com Google"),
+    undefined,
+  );
+  a.h.mount();
+  await tick();
+  assert.equal(
+    find(a.render(), (node) => node.props?.children === "Continuar com Google"),
+    undefined,
+  );
+  assert.ok(find(a.render(), (node) => node.props?.id === "email"));
 });

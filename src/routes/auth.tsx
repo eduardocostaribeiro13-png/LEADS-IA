@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
+import { isGoogleAuthEnabled, supabase } from "@/integrations/supabase/client";
 import { safeAuthPath } from "@/lib/auth-redirect";
 
 export const Route = createFileRoute("/auth")({
@@ -130,6 +130,20 @@ function AuthPage() {
   const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState(false);
   const [recovery, setRecovery] = useState(isRecoveryLocation);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    // Offer only providers enabled on the connected Supabase project.
+    isGoogleAuthEnabled(controller.signal)
+      .then((enabled) => {
+        if (!controller.signal.aborted) setGoogleEnabled(enabled);
+      })
+      .catch(() => {
+        // Email login remains available when provider discovery fails.
+      });
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -196,6 +210,7 @@ function AuthPage() {
   }
 
   async function handleGoogle() {
+    if (!googleEnabled) return;
     setBusy(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -327,20 +342,24 @@ function AuthPage() {
                   </Button>
                 </form>
 
-                <div className="my-4 flex items-center gap-3">
-                  <span className="h-px flex-1 bg-edge" />
-                  <span className="label-mono text-muted-foreground">ou</span>
-                  <span className="h-px flex-1 bg-edge" />
-                </div>
+                {googleEnabled && (
+                  <>
+                    <div className="my-4 flex items-center gap-3">
+                      <span className="h-px flex-1 bg-edge" />
+                      <span className="label-mono text-muted-foreground">ou</span>
+                      <span className="h-px flex-1 bg-edge" />
+                    </div>
 
-                <Button
-                  variant="outline"
-                  className="w-full border-edge bg-card"
-                  onClick={handleGoogle}
-                  disabled={busy}
-                >
-                  Continuar com Google
-                </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full border-edge bg-card"
+                      onClick={handleGoogle}
+                      disabled={busy}
+                    >
+                      Continuar com Google
+                    </Button>
+                  </>
+                )}
 
                 {mode === "login" && (
                   <button

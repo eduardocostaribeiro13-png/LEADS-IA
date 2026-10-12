@@ -1,6 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
+export async function isGoogleAuthEnabled(signal: AbortSignal): Promise<boolean> {
+  const response = await fetch(`${import.meta.env["VITE_SUPABASE_URL"]}/auth/v1/settings`, {
+    headers: { apikey: import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] },
+    signal,
+  });
+  if (!response.ok) return false;
+  const settings = (await response.json()) as { external?: { google?: boolean } };
+  return settings.external?.google === true;
+}
+
 function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
 }
