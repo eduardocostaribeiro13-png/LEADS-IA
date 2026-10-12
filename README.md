@@ -65,16 +65,16 @@ Os testes usam substitutos locais para autenticação e banco: não enviam e-mai
 
 ## Fonte Google Maps / Places
 
-A busca usa Places API (New), no servidor e apenas para usu�rios autenticados.
+A busca usa Places API (New), no servidor e apenas para usuários autenticados.
 Habilite essa API em um projeto Google Cloud com faturamento e configure
-`GOOGLE_PLACES_API_KEY` no ambiente do Render. Restrinja a chave � Places API (New)
-e defina cotas no Google Cloud; n�o use prefixo `VITE_` para essa chave.
-A configura��o n�o prova que a chave � v�lida: erros de permiss�o, faturamento
-ou cota s�o apresentados ao executar a consulta.
+`GOOGLE_PLACES_API_KEY` no ambiente do Render. Restrinja a chave à Places API (New)
+e defina cotas no Google Cloud; não use prefixo `VITE_` para essa chave.
+A configuração não prova que a chave é válida: erros de permissão, faturamento
+ou cota são apresentados ao executar a consulta.
 
-A primeira vers�o consulta at� 20 empresas por localiza��o e segmento, exibindo
-nome, endere�o e link para confer�ncia no Google Maps. N�o persiste os resultados
-automaticamente nem filtra por sinais comerciais que ainda n�o foram verificados.
-Google Search e Instagram ainda n�o possuem integra��o.
-Antes de ativar a fonte para usu�rios, publique os termos e a pol�tica de privacidade
-do seu servi�o conforme as pol�ticas do Google Maps Platform.
+A primeira versão consulta até 20 empresas por localização e segmento, exibindo
+nome, endereço e link para conferência no Google Maps. Não persiste os resultados
+automaticamente nem filtra por sinais comerciais que ainda não foram verificados.
+Google Search e Instagram ainda não possuem integração.
+Antes de ativar a fonte para usuários, publique os termos e a política de privacidade
+do seu serviço conforme as políticas do Google Maps Platform.
