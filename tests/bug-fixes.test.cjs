@@ -30,6 +30,62 @@ function load(file, mocks = {}) {
 
 const { safeAuthPath } = load("src/lib/auth-redirect.ts");
 const score = load("src/lib/score.ts");
+const { searchPlaces } = load("src/lib/places.server.ts");
+
+test("Places without a key does not issue a request", async () => {
+  await assert.rejects(
+    searchPlaces({ query: "Clínicas", quantity: 10 }, "", () => {
+      throw new Error("unexpected request");
+    }),
+    /não foi configurado/,
+  );
+});
+
+test("Places uses the server key, bounded results and explicit provider fields", async () => {
+  const result = await searchPlaces(
+    { query: "Clínicas, Curitiba", quantity: 50 },
+    "test-key",
+    async (url, options) => {
+      assert.equal(url, "https://places.googleapis.com/v1/places:searchText");
+      assert.equal(options.headers["X-Goog-Api-Key"], "test-key");
+      assert.equal(JSON.parse(options.body).pageSize, 20);
+      return new Response(
+        JSON.stringify({
+          places: [
+            {
+              id: "place-1",
+              displayName: { text: "Clínica teste" },
+              formattedAddress: "Endereço teste",
+              googleMapsUri: "https://maps.google.com/test",
+            },
+            { id: "incomplete" },
+          ],
+        }),
+      );
+    },
+  );
+  assert.deepEqual(result, [
+    {
+      id: "place-1",
+      name: "Clínica teste",
+      address: "Endereço teste",
+      mapsUrl: "https://maps.google.com/test",
+    },
+  ]);
+});
+
+for (const status of [403, 429, 500]) {
+  test(`Places ${status} never reports an empty successful search or leaks provider details`, async () => {
+    await assert.rejects(
+      searchPlaces(
+        { query: "Clínicas", quantity: 10 },
+        "private-key",
+        async () => new Response("private-key upstream details", { status }),
+      ),
+      (error) => !error.message.includes("private-key") && /Google Maps/.test(error.message),
+    );
+  });
+}
 test("redirects preserve internal paths, queries and fragments", () => {
   assert.equal(
     safeAuthPath("/leads?q=clinic#results", "https://app.test"),

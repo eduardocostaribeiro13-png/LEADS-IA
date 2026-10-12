@@ -1,47 +1,7 @@
-/**
- * Camada de descoberta de leads.
- *
- * IMPORTANTE: nenhuma fonte externa está conectada neste momento.
- * Este módulo é a única fronteira com APIs externas (Google Places, Google
- * Search, Instagram, etc.). Enquanto não houver integração, ele responde
- * `connected: false` e NUNCA inventa empresas, avaliações ou seguidores.
- */
+import { discoverPlaces } from "@/lib/discovery.functions";
+import type { PlaceResult } from "@/lib/places.server";
 
 export type DiscoverySourceId = "google_places" | "google_search" | "instagram" | "manual";
-
-export interface DiscoverySource {
-  id: DiscoverySourceId;
-  label: string;
-  connected: boolean;
-  description: string;
-}
-
-export const DISCOVERY_SOURCES: DiscoverySource[] = [
-  {
-    id: "google_places",
-    label: "Google Maps / Places",
-    connected: false,
-    description: "Busca de empresas por localização, segmento e avaliações.",
-  },
-  {
-    id: "google_search",
-    label: "Google Search",
-    connected: false,
-    description: "Descoberta de sites e presença digital.",
-  },
-  {
-    id: "instagram",
-    label: "Instagram",
-    connected: false,
-    description: "Seguidores, frequência de posts e bio.",
-  },
-  {
-    id: "manual",
-    label: "Importação manual",
-    connected: true,
-    description: "Cadastro de empresas encontradas por você.",
-  },
-];
 
 export interface HuntFilters {
   country: string;
@@ -57,7 +17,7 @@ export interface HuntResult {
   connected: boolean;
   source: DiscoverySourceId;
   message: string;
-  leads: never[];
+  leads: PlaceResult[];
 }
 
 export const COMMERCIAL_SIGNALS = [
@@ -97,27 +57,12 @@ export const SEGMENTS = [
   "Serviços premium",
 ];
 
-export const QUANTITIES = [10, 25, 50, 100, 250];
+export const QUANTITIES = [10, 20];
 
 /**
  * Executa a caça. Enquanto a fonte não estiver conectada, devolve o estado
  * explícito para a interface — sem dados fabricados.
  */
 export async function huntLeads(filters: HuntFilters): Promise<HuntResult> {
-  const source = DISCOVERY_SOURCES.find((entry) => entry.id === "google_places");
-
-  if (!source?.connected) {
-    return {
-      connected: false,
-      source: "google_places",
-      message:
-        "Fonte não conectada. Conecte o Google Maps / Places nas Configurações para caçar empresas reais em " +
-        [filters.city, filters.state].filter(Boolean).join("/") +
-        ".",
-      leads: [],
-    };
-  }
-
-  // Ponto de substituição pela API real (placesService.searchNearby).
-  return { connected: true, source: "google_places", message: "OK", leads: [] };
+  return discoverPlaces({ data: filters });
 }

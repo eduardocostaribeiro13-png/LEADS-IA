@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { DISCOVERY_SOURCES } from "@/services/leadHunterService";
+import { DiscoverySources } from "@/components/DiscoverySources";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -62,7 +62,12 @@ function SettingsPage() {
     mutationFn: async () => {
       if (!settings) throw new Error("Configurações não encontradas.");
       const list = (raw: string | undefined, current: string[]) =>
-        raw === undefined ? current : raw.split(",").map((item) => item.trim()).filter(Boolean);
+        raw === undefined
+          ? current
+          : raw
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean);
       const num = (raw: string | undefined, current: number) =>
         raw === undefined || raw === "" || Number.isNaN(Number(raw)) ? current : Number(raw);
       const { error } = await supabase
@@ -180,24 +185,7 @@ function SettingsPage() {
           </Button>
         </PanelCard>
 
-        <PanelCard title="Integrações" subtitle="Chaves ficam guardadas com segurança no servidor.">
-          <ul className="space-y-2">
-            {DISCOVERY_SOURCES.map((source) => (
-              <li
-                key={source.id}
-                className="flex items-center justify-between rounded-lg border border-edge bg-card px-3 py-2.5 text-sm"
-              >
-                <span>{source.label}</span>
-                <span className="label-mono text-muted-foreground">
-                  {source.connected ? "Conectada" : "Fonte não conectada"}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Para ativar Google Maps, busca ou Instagram, peça no chat para conectar a fonte desejada.
-          </p>
-        </PanelCard>
+        <DiscoverySources />
       </div>
 
       <PanelCard

@@ -62,3 +62,19 @@ Os testes usam substitutos locais para autenticação e banco: não enviam e-mai
 - O módulo de IA ainda aponta para o gateway antigo, aguardando a escolha de um provedor direto. Sem credenciais, os recursos de IA exibem erro de configuração; não produzem resultados fictícios.
 - Google Places, busca e Instagram ainda não estão conectados. O cadastro manual está disponível.
 - O banco existente foi preservado. Para outro projeto Supabase, aplique a migração de `drizzle/migrations/0000_lead_hunter_ai_core.sql` antes de usar a aplicação.
+
+## Fonte Google Maps / Places
+
+A busca usa Places API (New), no servidor e apenas para usu�rios autenticados.
+Habilite essa API em um projeto Google Cloud com faturamento e configure
+`GOOGLE_PLACES_API_KEY` no ambiente do Render. Restrinja a chave � Places API (New)
+e defina cotas no Google Cloud; n�o use prefixo `VITE_` para essa chave.
+A configura��o n�o prova que a chave � v�lida: erros de permiss�o, faturamento
+ou cota s�o apresentados ao executar a consulta.
+
+A primeira vers�o consulta at� 20 empresas por localiza��o e segmento, exibindo
+nome, endere�o e link para confer�ncia no Google Maps. N�o persiste os resultados
+automaticamente nem filtra por sinais comerciais que ainda n�o foram verificados.
+Google Search e Instagram ainda n�o possuem integra��o.
+Antes de ativar a fonte para usu�rios, publique os termos e a pol�tica de privacidade
+do seu servi�o conforme as pol�ticas do Google Maps Platform.

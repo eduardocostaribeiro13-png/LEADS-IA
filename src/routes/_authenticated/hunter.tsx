@@ -6,7 +6,8 @@ import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
 import { PanelCard } from "@/components/PanelCard";
-import { Badge } from "@/components/ui/badge";
+import { DiscoverySources } from "@/components/DiscoverySources";
+import type { HuntResult } from "@/services/leadHunterService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,13 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { buildDemoLeads } from "@/lib/demo";
 import { calculateLeadScore } from "@/lib/score";
 import { cn } from "@/lib/utils";
-import {
-  COMMERCIAL_SIGNALS,
-  DISCOVERY_SOURCES,
-  QUANTITIES,
-  SEGMENTS,
-  huntLeads,
-} from "@/services/leadHunterService";
+import { COMMERCIAL_SIGNALS, QUANTITIES, SEGMENTS, huntLeads } from "@/services/leadHunterService";
 
 export const Route = createFileRoute("/_authenticated/hunter")({
   head: () => ({
@@ -58,8 +53,9 @@ function Hunter() {
   const [neighborhood, setNeighborhood] = useState("");
   const [segment, setSegment] = useState(SEGMENTS[0]);
   const [customSegment, setCustomSegment] = useState("");
-  const [quantity, setQuantity] = useState(25);
-  const [signals, setSignals] = useState<string[]>(["Sem site"]);
+  const [quantity, setQuantity] = useState(10);
+  const [signals, setSignals] = useState<string[]>([]);
+  const [results, setResults] = useState<HuntResult["leads"]>([]);
   const [notice, setNotice] = useState<string | null>(null);
 
   const [manual, setManual] = useState({
@@ -86,13 +82,21 @@ function Hunter() {
         signals,
         quantity,
       }),
+    onMutate: () => {
+      setResults([]);
+      setNotice(null);
+    },
     onSuccess: (result) => {
+      setResults(result.leads);
       setNotice(result.message);
       if (!result.connected) {
         toast.info("Fonte não conectada — nenhuma empresa foi inventada.");
       }
     },
-    onError: () => toast.error("Não foi possível executar a caça agora."),
+    onError: (error) =>
+      toast.error(
+        error instanceof Error ? error.message : "Não foi possível executar a busca agora.",
+      ),
   });
 
   const seedDemo = useMutation({
@@ -108,7 +112,8 @@ function Hunter() {
       toast.success("6 empresas DEMO adicionadas (identificadas como DEMO).");
       navigate({ to: "/leads" });
     },
-    onError: (error) => toast.error(error instanceof Error ? error.message : "Falha ao criar demo."),
+    onError: (error) =>
+      toast.error(error instanceof Error ? error.message : "Falha ao criar demo."),
   });
 
   const addManual = useMutation({
@@ -234,7 +239,7 @@ function Hunter() {
 
           <PanelCard
             title="Sinais comerciais"
-            subtitle="O que indica que essa empresa precisa e pode pagar."
+            subtitle="A busca inicial usa localização e segmento. Os sinais abaixo exigem análise posterior."
           >
             <div className="flex flex-wrap gap-2">
               {COMMERCIAL_SIGNALS.map((signal) => {
@@ -243,6 +248,7 @@ function Hunter() {
                   <button
                     key={signal}
                     type="button"
+                    disabled
                     onClick={() => toggleSignal(signal)}
                     className={cn(
                       "rounded-full border px-3 py-1.5 text-xs transition-colors",
@@ -261,8 +267,14 @@ function Hunter() {
             <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
               <div className="space-y-2">
                 <Label>Quantidade de leads</Label>
-                <Select value={String(quantity)} onValueChange={(value) => setQuantity(Number(value))}>
-                  <SelectTrigger aria-label="Selecionar quantidade de leads" className="w-32 border-edge bg-card">
+                <Select
+                  value={String(quantity)}
+                  onValueChange={(value) => setQuantity(Number(value))}
+                >
+                  <SelectTrigger
+                    aria-label="Selecionar quantidade de leads"
+                    className="w-32 border-edge bg-card"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -294,44 +306,45 @@ function Hunter() {
                 <div className="flex items-start gap-3">
                   <PlugZap className="mt-0.5 size-4 shrink-0 text-tier-mid" aria-hidden="true" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">Fonte não conectada</p>
+                    <p className="text-sm font-medium text-foreground">Resultado da busca</p>
                     <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{notice}</p>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Enquanto isso você pode cadastrar empresas manualmente ou carregar as empresas
-                      DEMO para conhecer o fluxo completo.
+                      Os resultados são exibidos para consulta e não são gravados automaticamente no
+                      CRM.
                     </p>
                   </div>
                 </div>
               </div>
             )}
           </PanelCard>
+          {results.length > 0 && (
+            <PanelCard title="Empresas encontradas" subtitle="Google Maps">
+              <p className="mb-3 text-xs text-muted-foreground">
+                Dados fornecidos por Google Maps. A ausência de informações não confirma problemas
+                na empresa.
+              </p>
+              <ul className="space-y-3">
+                {results.map((place) => (
+                  <li key={place.id} className="rounded-lg border border-edge p-3">
+                    <p className="font-medium">{place.name}</p>
+                    <p className="text-sm text-muted-foreground">{place.address}</p>
+                    <a
+                      className="text-sm underline"
+                      href={place.mapsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Conferir no Google Maps
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </PanelCard>
+          )}
         </div>
 
         <div className="space-y-6">
-          <PanelCard title="Fontes de dados" subtitle="Nada é inventado: fontes desconectadas ficam explícitas.">
-            <ul className="space-y-3">
-              {DISCOVERY_SOURCES.map((source) => (
-                <li
-                  key={source.id}
-                  className="flex items-start justify-between gap-3 rounded-xl border border-edge bg-card px-4 py-3"
-                >
-                  <div>
-                    <p className="text-sm text-foreground">{source.label}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{source.description}</p>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "shrink-0 border-edge text-[11px]",
-                      source.connected ? "text-tier-good" : "text-muted-foreground",
-                    )}
-                  >
-                    {source.connected ? "Conectada" : "Não conectada"}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-          </PanelCard>
+          <DiscoverySources />
 
           <PanelCard
             title="Cadastrar empresa manualmente"
@@ -372,12 +385,17 @@ function Hunter() {
               disabled={!manual.company_name || addManual.isPending}
               onClick={() => addManual.mutate()}
             >
-              {addManual.isPending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+              {addManual.isPending && (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              )}
               ANALISAR LEAD
             </Button>
           </PanelCard>
 
-          <PanelCard title="Conhecer o fluxo" subtitle="Empresas fictícias, sempre marcadas como DEMO.">
+          <PanelCard
+            title="Conhecer o fluxo"
+            subtitle="Empresas fictícias, sempre marcadas como DEMO."
+          >
             <Button
               variant="outline"
               className="w-full gap-2 border-edge"
