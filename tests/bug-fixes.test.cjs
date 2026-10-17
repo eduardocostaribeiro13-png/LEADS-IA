@@ -32,6 +32,164 @@ const { safeAuthPath } = load("src/lib/auth-redirect.ts");
 const score = load("src/lib/score.ts");
 const { searchPlaces } = load("src/lib/places.server.ts");
 
+function dailyDatabase({
+  insertFails = false,
+  lookupFails = false,
+  completed = false,
+  paused = false,
+} = {}) {
+  const schedule = {
+    user_id: "owner",
+    enabled: true,
+    city: "Curitiba",
+    state: "PR",
+    country: "Brasil",
+    segment: "Restaurantes",
+    quantity: 10,
+    updated_at: "unchanged",
+  };
+  const run = { id: "run", lease_token: "lease" };
+  const writes = [],
+    saved = [];
+  let claimed = completed;
+  return {
+    writes,
+    saved,
+    db: {
+      rpc: async () => {
+        if (claimed) return { data: [], error: null };
+        claimed = true;
+        return { data: [run], error: null };
+      },
+      from(table) {
+        let op = "read",
+          payload,
+          single = false;
+        const chain = {
+          select() {
+            return chain;
+          },
+          eq() {
+            return chain;
+          },
+          not() {
+            return chain;
+          },
+          order() {
+            return chain;
+          },
+          range() {
+            return chain;
+          },
+          single() {
+            single = true;
+            return chain;
+          },
+          upsert(rows, options) {
+            op = "insert";
+            payload = rows;
+            assert.equal(options.ignoreDuplicates, true);
+            return chain;
+          },
+          update(patch) {
+            op = "update";
+            payload = patch;
+            return chain;
+          },
+          then(resolve, reject) {
+            let result;
+            if (op === "update") {
+              writes.push(payload);
+              result = { data: { id: "run" }, error: null };
+            } else if (op === "insert") {
+              if (!insertFails) saved.push(...payload);
+              result = insertFails
+                ? { data: null, error: { message: "denied" } }
+                : { data: payload.map((_, i) => ({ id: i })), error: null };
+            } else if (table === "hunt_schedules")
+              result = {
+                data: single ? { ...schedule, enabled: !paused } : [schedule],
+                error: null,
+              };
+            else
+              result = lookupFails
+                ? { data: null, error: { message: "offline" } }
+                : { data: [{ external_id: "node/old" }], error: null };
+            return Promise.resolve(result).then(resolve, reject);
+          },
+        };
+        return chain;
+      },
+    },
+  };
+}
+
+test("daily hunting saves scored leads under their owner and does not run twice in a day", async () => {
+  const { runDailyHunts } = load("src/lib/daily-hunt.ts");
+  const state = dailyDatabase();
+  let calls = 0;
+  const search = async (input) => {
+    calls++;
+    assert.deepEqual(input.excludeIds, ["node/old"]);
+    return [
+      {
+        id: "node/new",
+        name: "Restaurant",
+        address: "Street",
+        mapsUrl: "https://www.openstreetmap.org/node/new",
+        phone: "123",
+      },
+    ];
+  };
+  const first = await runDailyHunts(state.db, search, score.calculateLeadScore, async () => {});
+  assert.equal(first.completed, 1);
+  assert.equal(state.saved[0].user_id, "owner");
+  assert.ok(state.saved[0].lead_score > 0);
+  assert.equal(state.saved[0].google_maps_url, undefined);
+  assert.equal(state.writes[0].inserted_count, 1);
+  const second = await runDailyHunts(state.db, search, score.calculateLeadScore, async () => {});
+  assert.equal(second.skipped, 1);
+  assert.equal(calls, 1);
+});
+
+for (const failure of ["insertFails", "lookupFails", "paused"]) {
+  test(`daily hunting never reports success when ${failure}`, async () => {
+    const { runDailyHunts } = load("src/lib/daily-hunt.ts");
+    const state = dailyDatabase({ [failure]: true });
+    const result = await runDailyHunts(
+      state.db,
+      async () => [
+        {
+          id: "node/1",
+          name: "Business",
+          address: "Street",
+          mapsUrl: "https://www.openstreetmap.org/node/1",
+        },
+      ],
+      score.calculateLeadScore,
+      async () => {},
+    );
+    assert.equal(result.failed, 1);
+    assert.equal(result.completed, 0);
+    assert.equal(state.writes.at(-1).status, "failed");
+    assert.equal(state.saved.length, 0);
+  });
+}
+
+test("daily hunting records zero results honestly without attempting inserts", async () => {
+  const { runDailyHunts } = load("src/lib/daily-hunt.ts");
+  const state = dailyDatabase();
+  const result = await runDailyHunts(
+    state.db,
+    async () => [],
+    score.calculateLeadScore,
+    async () => {},
+  );
+  assert.equal(result.completed, 1);
+  assert.equal(state.saved.length, 0);
+  assert.equal(state.writes[0].inserted_count, 0);
+});
+
 test("OpenStreetMap rejects unsupported categories before making requests", async () => {
   const { searchOpenStreetMap } = load("src/lib/osm.server.ts");
   await assert.rejects(

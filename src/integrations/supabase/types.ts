@@ -14,6 +14,79 @@ export type Database = {
   }
   public: {
     Tables: {
+      hunt_schedules: {
+        Row: {
+          user_id: string
+          enabled: boolean
+          city: string
+          state: string
+          country: string
+          segment: string
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          enabled?: boolean
+          city: string
+          state?: string
+          country?: string
+          segment: string
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          enabled?: boolean
+          city?: string
+          state?: string
+          country?: string
+          segment?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hunt_runs: {
+        Row: {
+          id: string
+          user_id: string
+          run_day: string
+          status: string
+          started_at: string
+          finished_at: string | null
+          inserted_count: number
+          error: string | null
+          attempt: number
+          lease_token: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          run_day: string
+          status: string
+          started_at?: string
+          finished_at?: string | null
+          inserted_count?: number
+          error?: string | null
+          attempt?: number
+          lease_token?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          run_day?: string
+          status?: string
+          started_at?: string
+          finished_at?: string | null
+          inserted_count?: number
+          error?: string | null
+          attempt?: number
+          lease_token?: string
+        }
+        Relationships: []
+      }
+
       design_references: {
         Row: {
           created_at: string
@@ -248,6 +321,7 @@ export type Database = {
       }
       leads: {
         Row: {
+          external_id: string | null
           address: string | null
           category: string | null
           city: string | null
@@ -287,6 +361,7 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          external_id?: string | null
           address?: string | null
           category?: string | null
           city?: string | null
@@ -326,6 +401,7 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          external_id?: string | null
           address?: string | null
           category?: string | null
           city?: string | null
@@ -627,7 +703,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_daily_hunt: { Args: { p_user_id: string }; Returns: Database["public"]["Tables"]["hunt_runs"]["Row"][] }
     }
     Enums: {
       [_ in never]: never

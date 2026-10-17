@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DiscoverySources } from "@/components/DiscoverySources";
+import { DailyHunt } from "@/components/DailyHunt";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -188,6 +189,7 @@ function SettingsPage() {
         <DiscoverySources />
       </div>
 
+      <DailyHunt key={user?.id} />
       <PanelCard
         className="mt-6"
         title="Serviços oferecidos"

@@ -1,0 +1,26 @@
+name: Daily lead hunting
+on:
+  schedule:
+    # 09:17 Brasilia; two recovery attempts for transient source failures.
+    - cron: "17 12,13,14 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: daily-lead-hunting
+  cancel-in-progress: false
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci --include=dev
+      - run: node scripts/daily-hunt.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

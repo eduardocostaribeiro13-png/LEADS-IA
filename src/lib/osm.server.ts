@@ -56,6 +56,7 @@ export async function searchOpenStreetMap(
     neighborhood: string;
     segment: string;
     quantity: number;
+    excludeIds?: readonly string[];
   },
   request: typeof fetch = fetch,
 ): Promise<PlaceResult[]> {
@@ -65,7 +66,9 @@ export async function searchOpenStreetMap(
     .join(", ");
   const cacheKey = `${locationName.toLowerCase()}|${tags.join("|")}`;
   const cached = results.get(cacheKey);
-  if (cached && cached.expires > Date.now()) return cached.value.slice(0, input.quantity);
+  const select = (places: PlaceResult[]) =>
+    places.filter((p) => !input.excludeIds?.includes(p.id)).slice(0, input.quantity);
+  if (cached && cached.expires > Date.now()) return select(cached.value);
   // The public endpoints are for moderate usage. This app runs one server instance.
   if (running || Date.now() < nextRequestAt)
     throw new Error(
@@ -107,7 +110,7 @@ export async function searchOpenStreetMap(
     }
     const radius = input.neighborhood ? 3000 : 10000;
     const area = `(around:${radius},${location.value.lat},${location.value.lon})`;
-    const query = `[out:json][timeout:20];(${tags.map((tag) => `nwr${tag}["name"]${area};`).join("")});out tags 20;`;
+    const query = `[out:json][timeout:20];(${tags.map((tag) => `nwr${tag}["name"]${area};`).join("")});out tags 200;`;
     const response = await request(
       process.env["OSM_OVERPASS_URL"] || "https://overpass-api.de/api/interpreter",
       {
@@ -149,12 +152,18 @@ export async function searchOpenStreetMap(
                 .filter(Boolean)
                 .join(", ") || "Endereço não informado",
             mapsUrl: `https://www.openstreetmap.org/${id}`,
+            ...(t["contact:phone"] || t["phone"]
+              ? { phone: t["contact:phone"] || t["phone"]! }
+              : {}),
+            ...(t["contact:website"] || t["website"]
+              ? { website: t["contact:website"] || t["website"]! }
+              : {}),
           },
         ];
       })
-      .slice(0, 20);
+      .slice(0, 200);
     remember(results, cacheKey, places, 900000);
-    return places.slice(0, input.quantity);
+    return select(places);
   } catch (error) {
     if (
       error instanceof Error &&

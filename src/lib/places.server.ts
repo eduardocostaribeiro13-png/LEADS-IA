@@ -3,6 +3,8 @@ export interface PlaceResult {
   name: string;
   address: string;
   mapsUrl: string;
+  phone?: string;
+  website?: string;
 }
 
 export async function searchPlaces(
